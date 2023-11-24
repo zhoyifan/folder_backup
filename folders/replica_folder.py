@@ -17,11 +17,15 @@ class ReplicaFolder(Folder):
         toDelete=[]
         for filePath,hash in self.hashes.items():
             if filePath not in sourceHashes:
-                Path.unlink(Path(os.path.join(self.directory,filePath)))
-                toDelete.append(filePath)
+                try:
+                    Path.unlink(Path(os.path.join(self.directory,filePath)))
+                except Exception as Argument:
+                    logging.error(f"File {os.path.join(self.directory,filePath)} deletion error, {str(Argument)}.")
+                else:
+                    logging.info(f"File {os.path.join(self.directory,filePath)} deleted.")
+                toDelete.append(filePath)               
         for i in toDelete:
-            self.hashes.pop(i,None)
-            logging.info(f"File {i} deleted.")
+            self.hashes.pop(i,None)            
 
     def AddOrUpdateFiles(self,sourceFolder:SourceFolder):
         sourceHashes=sourceFolder.GetHashes()
@@ -33,10 +37,18 @@ class ReplicaFolder(Folder):
                 replicaFilePath=os.path.abspath(replicaFilePath)
                 # replicaFilePath=os.path.join(replicaFilePath,'/')
                 if not os.path.exists(replicaFilePath):
-                    os.mkdir(replicaFilePath)
-                    logging.info(f'Folder {replicaFilePath} created.')
-                shutil.copy(sourceFilePath, replicaFilePath)
-                logging.info(f'File copied from {sourceFilePath} to {replicaFilePath}')
+                    try:
+                        os.mkdir(replicaFilePath)
+                    except Exception as Argument:
+                        logging.error(f"Folder {replicaFilePath} creation error, {str(Argument)}.")
+                    else:
+                        logging.info(f'Folder {replicaFilePath} created.')
+                try:
+                    shutil.copy(sourceFilePath, replicaFilePath)
+                except Exception as Argument:
+                    logging.error(f"File from {sourceFilePath} to {replicaFilePath} copy error, {str(Argument)}.")
+                else:
+                    logging.info(f'File copied from {sourceFilePath} to {replicaFilePath}')
                 self.hashes[filePath]=hash
     
     def DeleteSubFolders(self,sourceFolder:SourceFolder):
@@ -44,17 +56,24 @@ class ReplicaFolder(Folder):
         toRemove=[]
         for subfolder in self.subfolders:
             if subfolder not in sourceSubfolders:
-                shutil.rmtree(os.path.join(self.directory,subfolder))
+                try:
+                    shutil.rmtree(os.path.join(self.directory,subfolder))
+                except Exception as Argument:
+                    logging.error(f"Folder {os.path.join(self.directory,subfolder)} deletion error, {str(Argument)}.") 
+                else:
+                    logging.info(f'Folder {os.path.join(self.directory,subfolder)} deleted.')
                 toRemove.append(subfolder)
         for i in toRemove:
             self.subfolders.remove(i)
-            logging.info(f'File {i} deleted.') 
     def AddSubFolders(self,sourceFolder:SourceFolder):
         sourceSubfolders=sourceFolder.GetSubfolders()
         for subfolder in sourceSubfolders:
             if subfolder not in self.subfolders:
-                os.makedirs(os.path.join(self.directory,subfolder),exist_ok=True)
+                try:
+                    os.makedirs(os.path.join(self.directory,subfolder),exist_ok=True)
+                except Exception as Argument:
+                    logging.error(f"Folder {os.path.join(self.directory,subfolder)} creation error, {str(Argument)}.") 
+                else:
+                    logging.info(f'Folder {os.path.join(self.directory,subfolder)} created.')
                 self.subfolders.add(subfolder)
-                logging.info(f'Folder {os.path.join(self.directory,subfolder)} created.')
-
         
